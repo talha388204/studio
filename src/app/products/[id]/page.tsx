@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage({ params: { id } }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     async function fetchProduct() {
       try {
         setLoading(true);
-        const fetchedProduct = await getProduct(params.id);
+        const fetchedProduct = await getProduct(id);
         if (fetchedProduct) {
           setProduct(fetchedProduct);
         } else {
@@ -32,7 +32,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
       }
     }
     fetchProduct();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
