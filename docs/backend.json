@@ -56,6 +56,52 @@
         "image",
         "quantity"
       ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents a customer's order.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who placed the order."
+        },
+        "items": {
+          "type": "array",
+          "description": "The items included in the order.",
+          "items": {
+            "$ref": "#/entities/CartItem"
+          }
+        },
+        "total": {
+          "type": "number",
+          "description": "The total cost of the order."
+        },
+        "shippingAddress": {
+          "type": "object",
+          "description": "The address where the order will be shipped.",
+          "properties": {
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "city": { "type": "string" },
+            "postalCode": { "type": "string" },
+            "country": { "type": "string" }
+          },
+          "required": ["name", "address", "city", "postalCode", "country"]
+        },
+        "status": {
+            "type": "string",
+            "description": "The current status of the order.",
+            "enum": ["pending", "shipped", "delivered", "cancelled"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the order was placed.",
+          "format": "date-time"
+        }
+      },
+      "required": [ "userId", "items", "total", "shippingAddress", "status", "createdAt" ]
     }
   },
   "auth": {
@@ -75,6 +121,12 @@
         "$ref": "#/entities/CartItem"
       },
       "description": "Stores items in a user's shopping cart."
+    },
+    "/orders/{orderId}": {
+        "schema": {
+            "$ref": "#/entities/Order"
+        },
+        "description": "Stores all customer orders."
     }
   }
 }

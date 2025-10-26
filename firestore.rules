@@ -1,84 +1,45 @@
-/**
- * @file Firestore Security Rules
- * @version 2
- *
- * @Core Philosophy
- * This ruleset enforces a strict user-ownership model, ensuring that users can only access and modify their own data.
- *
- * @Data Structure
- * All data is nested under /users/{userId}, with user profiles stored directly under the user ID and cart items in a /cart subcollection.
- *
- * @Key Security Decisions
- * - Users can only create, read, update, and delete their own profile data.
- * - Users can only manage their own cart items.
- * - Listing all users is disallowed.
- *
- * @Denormalization for Authorization
- *  None required. The data model naturally supports ownership-based security.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Controls access to user profile documents.
-     * @path /users/{userId}
-     * @allow (create) User with UID 'user_abc' can create their profile if userId == user_abc.
-     * @allow (get) User with UID 'user_abc' can read their profile if userId == user_abc.
-     * @allow (update) User with UID 'user_abc' can update their profile if userId == user_abc.
-     * @allow (delete) User with UID 'user_abc' can delete their profile if userId == user_abc.
-     * @deny (create) User with UID 'user_abc' cannot create a profile with userId == user_xyz.
-     * @deny (get) User with UID 'user_abc' cannot read a profile with userId == user_xyz.
-     * @principle Enforces user-ownership for profile data.
-     */
     match /users/{userId} {
-      // Verify user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && existsAfter(/databases/$(database)/documents/users/$(userId));
+      }
+
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false; // Listing all users is disallowed
-
-      // Only allow creating a profile if the user is signed in and the userId matches the authenticated user's ID.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.email is string && request.resource.data.createdAt is string;
-
-      // Allow updates and deletes only if the user is the owner of the profile and the document exists.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.email is string && request.resource.data.createdAt is string;
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
-    /**
-     * @description Controls access to cart items for a specific user.
-     * @path /users/{userId}/cart/{cartItemId}
-     * @allow (create) User with UID 'user_abc' can create a cart item under their ID (userId == user_abc).
-     * @allow (get) User with UID 'user_abc' can read a cart item under their ID (userId == user_abc).
-     * @allow (update) User with UID 'user_abc' can update a cart item under their ID (userId == user_abc).
-     * @allow (delete) User with UID 'user_abc' can delete a cart item under their ID (userId == user_abc).
-     * @deny (create) User with UID 'user_abc' cannot create a cart item under a different ID (userId == user_xyz).
-     * @deny (get) User with UID 'user_abc' cannot read a cart item under a different ID (userId == user_xyz).
-     * @principle Enforces user-ownership for cart items.
-     */
     match /users/{userId}/cart/{cartItemId} {
-      // Only signed-in users can access their own cart items.
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && existsAfter(/databases/$(database)/documents/users/$(userId)/cart/$(cartItemId));
+      }
+
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId); // Allow listing cart items
-
-      // Only allow creating a cart item if the user is signed in and it's under their own user ID.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.productId is number && request.resource.data.title is string && request.resource.data.price is number && request.resource.data.image is string && request.resource.data.quantity is number;
-
-      // Allow updates and deletes only if the user is the owner and the document exists.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.productId is number && request.resource.data.title is string && request.resource.data.price is number && request.resource.data.image is string && request.resource.data.quantity is number;
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
   }
 }

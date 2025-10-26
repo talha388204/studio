@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -53,7 +54,9 @@ export default function CartSheet() {
                   <p>Subtotal</p>
                   <p>${total.toFixed(2)}</p>
                 </div>
-                <Button className="w-full">Checkout</Button>
+                <Button asChild className="w-full" onClick={() => setCartOpen(false)}>
+                  <Link href="/checkout">Checkout</Link>
+                </Button>
                 <Button variant="outline" className="w-full" onClick={clearCart}>Clear Cart</Button>
               </div>
             </SheetFooter>
