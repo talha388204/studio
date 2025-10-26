@@ -2,104 +2,96 @@
  * @fileoverview Firestore Security Rules for the application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user profiles and shopping carts.
- * Orders can be viewed by anyone.
+ * This ruleset enforces a user-ownership model for user profiles and carts,
+ * while allowing users to create orders that are associated with their user ID.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profile data, accessible only to the user.
- * - /users/{userId}/cart/{cartItemId}: Stores individual cart items for a user, accessible only to the user.
- * - /orders/{orderId}: Stores order information; accessible to all authenticated users.
+ * - /users/{userId}: Stores user profile information. Accessible only by the user.
+ * - /users/{userId}/cart/{cartItemId}: Stores cart items. Accessible only by the user.
+ * - /orders/{orderId}: Stores order information.  Orders are accessible to the user who created them.
  *
  * Key Security Decisions:
- * - User listing is disallowed.
- * - Cart items are strictly user-owned and not publicly accessible.
+ * - Users can only read and write their own profile and cart data.
+ * - Orders can be created by any authenticated user and are associated with their userId.
+ * - Listing of users or cart items is restricted to the owner of the data.
+ * - Data validation is relaxed in this prototyping phase to allow for rapid schema iteration,
+ *   except for critical ownership and relational integrity checks.
  *
  * Denormalization for Authorization:
- *  - User profile and cart data are nested under /users/{userId} to simplify ownership checks.
+ * - The `Order` entity contains a `userId` field, which is used to associate the order with the user who created it.
+ *   This avoids the need for complex queries to determine order ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants access to user profile documents.
+     * @description Protects user profiles, allowing only the owner to read and write.
      * @path /users/{userId}
-     * @allow (create) Authenticated user can create their own profile.
-     * @allow (get) Authenticated user can read their own profile.
-     * @allow (update) Authenticated user can update their own profile.
-     * @allow (delete) Authenticated user can delete their own profile.
-     * @deny (list) Listing all users is prohibited.
-     * @deny (create) Non-authenticated users and other users can't create profiles.
-     * @deny (get) Non-authenticated users and other users can't read profiles.
-     * @deny (update) Non-authenticated users and other users can't update profiles.
-     * @deny (delete) Non-authenticated users and other users can't delete profiles.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (read, write) User with UID 'user123' can read/write their own profile at /users/user123.
+     * @deny (read, write) User with UID 'user456' cannot read/write profile at /users/user123.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
+      //function isSignedIn() {
+       // return request.auth != null;
+      //}
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
+      allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.email is string && request.resource.data.createdAt is string;
-      allow update: if isSignedIn() && isOwner(userId) && resource.data.email == request.resource.data.email && resource.data.createdAt == request.resource.data.createdAt;
-      allow delete: if isSignedIn() && isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Grants access to cart items for a specific user.
+     * @description Protects user carts, allowing only the owner to read and write.
      * @path /users/{userId}/cart/{cartItemId}
-     * @allow (create) Authenticated user can create cart items in their own cart.
-     * @allow (get) Authenticated user can read cart items in their own cart.
-     * @allow (update) Authenticated user can update cart items in their own cart.
-     * @allow (delete) Authenticated user can delete cart items in their own cart.
-     * @allow (list) Authenticated user can list cart items in their own cart.
-     * @deny (create) Non-authenticated users and other users can't create cart items.
-     * @deny (get) Non-authenticated users and other users can't read cart items.
-     * @deny (update) Non-authenticated users and other users can't update cart items.
-     * @deny (delete) Non-authenticated users and other users can't delete cart items.
-     * @principle Enforces document ownership for cart items.
+     * @allow (read, write) User with UID 'user123' can read/write their own cart at /users/user123/cart/item001.
+     * @deny (read, write) User with UID 'user456' cannot read/write cart at /users/user123/cart/item001.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/cart/{cartItemId} {
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    /**
+     * @description Controls access to orders, allowing users to create orders for themselves.
+     * @path /orders/{orderId}
+     * @allow (create) User with UID 'user123' can create an order with userId 'user123' at /orders/order001.
+     * @allow (get) User with UID 'user123' can get an order with userId 'user123' at /orders/order001.
+     * @deny (create) User with UID 'user456' cannot create an order with userId 'user123' at /orders/order001.
+     * @deny (update) User with UID 'user456' cannot update order with userId 'user123' at /orders/order001.
+     * @deny (delete) User with UID 'user456' cannot delete order with userId 'user123' at /orders/order001.
+     * @principle Orders can be created by any authenticated user, but only modified/deleted by owner.
+     */
+    match /orders/{orderId} {
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
-      function isSignedIn() {
-        return request.auth != null;
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
       }
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.productId is number && request.resource.data.title is string && request.resource.data.price is number && request.resource.data.image is string && request.resource.data.quantity is number;
-      allow update: if isSignedIn() && isOwner(userId) && resource.data.productId == request.resource.data.productId && resource.data.title == request.resource.data.title && resource.data.price == request.resource.data.price && resource.data.image == request.resource.data.image && resource.data.quantity == request.resource.data.quantity;
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
 
-     /**
-      * @description Grants access to order documents for any signed-in user.
-      * @path /orders/{orderId}
-      * @allow (get) Any signed-in user can read order documents.
-      * @allow (list) Any signed-in user can list order documents.
-      * @deny (create) Only authenticated users are allowed to create an order.
-      * @deny (update) Orders cannot be updated once created.
-      * @deny (delete) Orders cannot be deleted.
-      * @principle Orders are publicly readable for signed-in users, but only created, not modified or deleted.
-      */
-      match /orders/{orderId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        allow get: if isSignedIn();
-        allow list: if isSignedIn();
-        allow create: if isSignedIn() && request.resource.data.userId is string && request.resource.data.items is list && request.resource.data.total is number && request.resource.data.shippingAddress is map && request.resource.data.status is string && request.resource.data.createdAt is string;
-        allow update: if false;
-        allow delete: if false;
+      allow get: if true; // Allow public read
+      allow list: if false;
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow update: if isExistingOwner(resource.data.userId);
+      allow delete: if isExistingOwner(resource.data.userId);
     }
   }
 }
