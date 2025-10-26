@@ -60,7 +60,6 @@ export const useCart = () => {
                 const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CartItem));
                 setCartItems(items);
             }, (error) => {
-                 console.error("Error fetching cart items:", error);
                  const contextualError = new FirestorePermissionError({
                     operation: 'list',
                     path: cartCollectionRef.path,
