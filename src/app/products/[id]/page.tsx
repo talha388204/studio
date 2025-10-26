@@ -8,11 +8,13 @@ import { ShoppingCart, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCart } from '@/hooks/use-cart';
 
 export default function ProductDetailPage({ params: { id } }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     async function fetchProduct() {
@@ -33,6 +35,12 @@ export default function ProductDetailPage({ params: { id } }: { params: { id: st
     }
     fetchProduct();
   }, [id]);
+
+  const handleAddToCart = () => {
+    if (product) {
+      addToCart(product);
+    }
+  };
 
   if (loading) {
     return (
@@ -90,7 +98,7 @@ export default function ProductDetailPage({ params: { id } }: { params: { id: st
             <p className="text-muted-foreground leading-relaxed text-base">{product.description}</p>
             
             <div className="mt-8">
-                 <Button size="lg" className="w-full md:w-auto group bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 transform hover:scale-105">
+                 <Button onClick={handleAddToCart} size="lg" className="w-full md:w-auto group bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 transform hover:scale-105">
                     <ShoppingCart className="mr-2 group-hover:rotate-12 transition-transform" /> Add to Cart
                 </Button>
             </div>

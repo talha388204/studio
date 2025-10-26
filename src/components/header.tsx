@@ -1,12 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Package2, Search, Menu, User } from "lucide-react";
+import { ShoppingCart, Package2, Search, Menu, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/hooks/use-cart";
+import { Badge } from "./ui/badge";
 
 export default function Header() {
+    const { user, isUserLoading } = useUser();
+    const auth = useAuth();
+    const { toast } = useToast();
+    const router = useRouter();
+    const { setCartOpen, cartItems } = useCart();
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            toast({
+                title: "Logged Out",
+                description: "You have been successfully logged out.",
+            });
+            router.push('/');
+        } catch (error) {
+            console.error("Logout Error:", error);
+            toast({
+                variant: "destructive",
+                title: "Logout Failed",
+                description: "An error occurred during logout. Please try again.",
+            });
+        }
+    };
+
+    const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg">
       <div className="container mx-auto flex h-20 items-center justify-between">
@@ -21,22 +53,47 @@ export default function Header() {
             </nav>
         </div>
 
-        <div className="hidden md:flex flex-1 items-center justify-end gap-4">
+        <div className="hidden md:flex flex-1 items-center justify-end gap-2">
             <div className="relative w-full max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search products..." className="pl-9 bg-muted/50 focus:bg-background" />
             </div>
-            <Button variant="ghost" size="icon" className="group">
+            <Button variant="ghost" size="icon" className="group relative" onClick={() => setCartOpen(true)}>
                 <ShoppingCart className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                {totalItems > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs">
+                        {totalItems}
+                    </Badge>
+                )}
                 <span className="sr-only">Cart</span>
             </Button>
-            <Button variant="ghost" size="icon" className="group">
-                <User className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="sr-only">Account</span>
-            </Button>
+            {!isUserLoading && (
+                user ? (
+                    <Button variant="ghost" size="icon" className="group" onClick={handleLogout}>
+                        <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive transition-colors" />
+                        <span className="sr-only">Logout</span>
+                    </Button>
+                ) : (
+                    <Button asChild variant="ghost" size="icon" className="group">
+                        <Link href="/login">
+                            <User className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                            <span className="sr-only">Account</span>
+                        </Link>
+                    </Button>
+                )
+            )}
         </div>
 
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="group relative" onClick={() => setCartOpen(true)}>
+                <ShoppingCart className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                {totalItems > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs">
+                        {totalItems}
+                    </Badge>
+                )}
+                <span className="sr-only">Cart</span>
+            </Button>
             <Sheet>
                 <SheetTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -53,14 +110,21 @@ export default function Header() {
                         <Link href="/" className="hover:text-primary text-muted-foreground">Home</Link>
                         <Link href="/products" className="hover:text-primary text-muted-foreground">All Products</Link>
                          <div className="flex items-center gap-4 mt-4">
-                            <Button variant="ghost" size="icon" className="group">
-                                <ShoppingCart className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                <span className="sr-only">Cart</span>
-                            </Button>
-                            <Button variant="ghost" size="icon" className="group">
-                                <User className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                <span className="sr-only">Account</span>
-                            </Button>
+                             {!isUserLoading && (
+                                user ? (
+                                    <Button variant="ghost" size="icon" className="group" onClick={handleLogout}>
+                                        <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive transition-colors" />
+                                        <span className="sr-only">Logout</span>
+                                    </Button>
+                                ) : (
+                                    <Button asChild variant="ghost" size="icon" className="group">
+                                        <Link href="/login">
+                                            <User className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                            <span className="sr-only">Account</span>
+                                        </Link>
+                                    </Button>
+                                )
+                            )}
                         </div>
                     </nav>
                 </SheetContent>
