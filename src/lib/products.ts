@@ -1,3 +1,4 @@
+
 export type Product = {
   id: number;
   title: string;
@@ -29,20 +30,11 @@ type ProductsApiResponse = {
   limit: number;
 };
 
-type BooksApiResponse = {
-  products: DummyJSONProduct[];
-  total: number;
-  skip: number;
-  limit: number;
-};
-
-
 export async function getProducts(): Promise<Product[]> {
   try {
-    const [dummyjsonRes, fakestoreRes, booksRes] = await Promise.all([
+    const [dummyjsonRes, fakestoreRes] = await Promise.all([
         fetch('https://dummyjson.com/products?limit=100'),
         fetch('https://fakestoreapi.com/products'),
-        fetch('https://dummyjson.com/products/category/books')
     ]);
 
     let allProducts: Product[] = [];
@@ -77,25 +69,13 @@ export async function getProducts(): Promise<Product[]> {
         console.error('Failed to fetch from fakestoreapi');
     }
     
-    // Process books
-    let bookData: Product[] = [];
-    if(booksRes.ok) {
-        const booksApiResponse: BooksApiResponse = await booksRes.json();
-        bookData = booksApiResponse.products.map(p => ({
-            ...p,
-            id: p.id + 300, // Ensure unique IDs
-            image: p.thumbnail,
-            rating: p.rating,
-        }));
-    } else {
-        // Add some mock books if the category doesn't exist or fetch fails
-        bookData = [
-            { id: 401, title: "The Great Gatsby", price: 10.99, description: "A novel by F. Scott Fitzgerald.", category: "books", image: "https://picsum.photos/seed/the-great-gatsby/600/400", rating: 4.5, stock: 50, brand: "Penguin Classics" },
-            { id: 402, title: "To Kill a Mockingbird", price: 12.50, description: "A novel by Harper Lee.", category: "books", image: "https://picsum.photos/seed/to-kill-a-mockingbird/600/400", rating: 4.8, stock: 30, brand: "HarperCollins" },
-            { id: 403, title: "1984", price: 9.99, description: "A dystopian social science fiction novel by George Orwell.", category: "books", image: "https://picsum.photos/seed/1984/600/400", rating: 4.7, stock: 60, brand: "Signet Classics" },
-            { id: 404, title: "Pride and Prejudice", price: 8.99, description: "A romantic novel of manners by Jane Austen.", category: "books", image: "https://picsum.photos/seed/pride-and-prejudice/600/400", rating: 4.6, stock: 45, brand: "Modern Library" }
-        ];
-    }
+    // Add some mock books as the 'books' category doesn't exist in the APIs
+    const bookData: Product[] = [
+        { id: 401, title: "The Great Gatsby", price: 10.99, description: "A novel by F. Scott Fitzgerald.", category: "books", image: "https://picsum.photos/seed/the-great-gatsby/600/400", rating: 4.5, stock: 50, brand: "Penguin Classics" },
+        { id: 402, title: "To Kill a Mockingbird", price: 12.50, description: "A novel by Harper Lee.", category: "books", image: "https://picsum.photos/seed/to-kill-a-mockingbird/600/400", rating: 4.8, stock: 30, brand: "HarperCollins" },
+        { id: 403, title: "1984", price: 9.99, description: "A dystopian social science fiction novel by George Orwell.", category: "books", image: "https://picsum.photos/seed/1984/600/400", rating: 4.7, stock: 60, brand: "Signet Classics" },
+        { id: 404, title: "Pride and Prejudice", price: 8.99, description: "A romantic novel of manners by Jane Austen.", category: "books", image: "https://picsum.photos/seed/pride-and-prejudice/600/400", rating: 4.6, stock: 45, brand: "Modern Library" }
+    ];
     
     allProducts = allProducts.concat(bookData);
 
@@ -125,12 +105,10 @@ export async function getProduct(id: string): Promise<Product | null> {
         let isFakeStore = false;
 
         // A simple check to decide which API to hit. This could be more robust.
-        if (productId > 200 && productId < 300) {
+        if (productId > 200 && productId < 400) {
              res = await fetch(`https://fakestoreapi.com/products/${productId - 200}`);
              isFakeStore = true;
-        } else if (productId > 300 && productId < 400) {
-             res = await fetch(`https://dummyjson.com/products/${productId - 300}`);
-        } else if (productId > 400) {
+        } else if (productId >= 401 && productId <= 404) { // Check if it's one of the mock books
              const mockBooks = [
                 { id: 401, title: "The Great Gatsby", price: 10.99, description: "A novel by F. Scott Fitzgerald.", category: "books", image: "https://picsum.photos/seed/the-great-gatsby/600/400", rating: 4.5, stock: 50, brand: "Penguin Classics" },
                 { id: 402, title: "To Kill a Mockingbird", price: 12.50, description: "A novel by Harper Lee.", category: "books", image: "https://picsum.photos/seed/to-kill-a-mockingbird/600/400", rating: 4.8, stock: 30, brand: "HarperCollins" },
