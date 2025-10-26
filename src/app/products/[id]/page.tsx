@@ -89,9 +89,9 @@ export default function ProductDetailPage({ params: { id } }: { params: { id: st
             <div className="flex items-center gap-4 mt-4">
                 <div className="flex items-center gap-1">
                     <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    <span className="ml-1 font-bold text-lg">{product.rating.rate}</span>
+                    <span className="ml-1 font-bold text-lg">{product.rating.toFixed(1)}</span>
                 </div>
-                <span className="text-muted-foreground">({product.rating.count} reviews)</span>
+                <span className="text-muted-foreground">({product.stock} in stock)</span>
             </div>
             <Separator className="my-6" />
             <p className="text-4xl font-bold text-primary mb-6">${product.price.toFixed(2)}</p>

@@ -39,7 +39,7 @@ export default function HomePage() {
             <p className="mt-2 text-muted-foreground text-lg">Explore our most popular collections</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {['Electronics', 'Jewelery', 'Men\'s Clothing', 'Women\'s Clothing'].map(category => (
+            {['smartphones', 'laptops', 'fragrances', 'skincare'].map(category => (
                 <div key={category} className="group relative overflow-hidden rounded-lg shadow-lg transition-all duration-300 hover:shadow-primary/20 hover:-translate-y-2">
                     <Link href={`/products?category=${encodeURIComponent(category.toLowerCase())}`}>
                         <Image
@@ -51,7 +51,7 @@ export default function HomePage() {
                           data-ai-hint={category.toLowerCase().split(' ')[0]}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-start p-6">
-                          <h3 className="text-2xl font-headline font-bold text-white">{category}</h3>
+                          <h3 className="text-2xl font-headline font-bold text-white">{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
                         </div>
                     </Link>
                 </div>

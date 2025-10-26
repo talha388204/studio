@@ -55,7 +55,7 @@ function ProductsPageContent() {
             return b.price - a.price;
         }
         if (sortOrder === 'rating-desc') {
-            return b.rating.rate - a.rating.rate;
+            return b.rating - a.rating;
         }
         return 0;
     });
@@ -100,7 +100,7 @@ function ProductsPageContent() {
         </div>
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} className="flex flex-col space-y-3">
               <Skeleton className="h-[250px] w-full rounded-xl" />
               <div className="space-y-2">

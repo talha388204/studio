@@ -33,8 +33,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400"/>
-                <span>{product.rating.rate}</span>
-                <span className="hidden sm:inline">({product.rating.count})</span>
+                <span>{product.rating.toFixed(1)}</span>
+                <span className="hidden sm:inline">({product.stock})</span>
             </div>
         </CardFooter>
       </Card>
