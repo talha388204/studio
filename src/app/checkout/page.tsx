@@ -15,6 +15,8 @@ import { useUser, useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const addressSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -38,7 +40,7 @@ export default function CheckoutPage() {
     resolver: zodResolver(addressSchema),
   });
 
-  const handlePlaceOrder = async (data: AddressForm) => {
+  const handlePlaceOrder = (data: AddressForm) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to place an order.' });
       return;
@@ -50,36 +52,51 @@ export default function CheckoutPage() {
     
     setIsPlacingOrder(true);
     
+    const orderItems = cartItems.map(item => ({
+      productId: item.productId,
+      title: item.title,
+      price: item.price,
+      image: item.image,
+      quantity: item.quantity,
+    }));
+
     const orderData = {
       userId: user.uid,
-      items: cartItems,
+      items: orderItems,
       total,
       shippingAddress: data,
       status: 'pending',
       createdAt: serverTimestamp(),
     };
 
-    try {
-      const ordersCollectionRef = collection(firestore, 'orders');
-      await addDoc(ordersCollectionRef, orderData);
-      
-      clearCart();
+    const ordersCollectionRef = collection(firestore, 'orders');
+    
+    addDoc(ordersCollectionRef, orderData)
+      .then(() => {
+          clearCart();
+          toast({
+            title: 'Order Placed!',
+            description: 'Thank you for your purchase. Your order is being processed.',
+          });
+          router.push('/');
+      })
+      .catch(() => {
+        const permissionError = new FirestorePermissionError({
+            path: ordersCollectionRef.path,
+            operation: 'create',
+            requestResourceData: orderData
+        });
+        errorEmitter.emit('permission-error', permissionError);
 
-      toast({
-        title: 'Order Placed!',
-        description: 'Thank you for your purchase. Your order is being processed.',
-      });
-      router.push('/');
-    } catch (error) {
-      console.error("Order placement error:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Order Failed',
-        description: 'There was a problem placing your order. Please try again.',
-      });
-    } finally {
+        toast({
+            variant: 'destructive',
+            title: 'Order Failed',
+            description: 'There was a problem placing your order. Please try again.',
+        });
+      })
+      .finally(() => {
         setIsPlacingOrder(false);
-    }
+      });
   };
 
   return (
