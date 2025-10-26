@@ -11,7 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/hooks/use-cart';
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +20,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     async function fetchProduct() {
       try {
         setLoading(true);
-        const fetchedProduct = await getProduct(id);
+        const fetchedProduct = await getProduct(params.id);
         if (fetchedProduct) {
           setProduct(fetchedProduct);
         } else {
@@ -34,8 +33,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         setLoading(false);
       }
     }
-    fetchProduct();
-  }, [id]);
+    if (params.id) {
+        fetchProduct();
+    }
+  }, [params.id]);
 
   const handleAddToCart = () => {
     if (product) {
