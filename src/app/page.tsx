@@ -1,61 +1,81 @@
-import Image from "next/image";
-import { games } from "@/lib/games";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
-import GameCard from "@/components/game-card";
-import Recommendations from "@/components/recommendations";
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
-export default function Home() {
-  const heroImage = PlaceHolderImages.find((img) => img.id === "hero-image");
-
+export default function HomePage() {
   return (
     <div className="flex flex-col">
-      <section className="relative w-full h-[50vh] md:h-[60vh]">
-        {heroImage && (
-          <Image
-            src={heroImage.imageUrl}
-            alt={heroImage.description}
-            fill
-            className="object-cover"
-            priority
-            data-ai-hint={heroImage.imageHint}
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-        <div className="relative container max-w-screen-2xl h-full flex flex-col items-center justify-end text-center pb-12">
-          <h1 className="text-4xl md:text-6xl font-headline font-bold text-foreground drop-shadow-lg">
-            Welcome to Ekta Game Studio
+      <section className="relative w-full h-[60vh] md:h-[70vh] bg-gradient-to-r from-primary to-accent">
+        <Image
+          src="https://picsum.photos/seed/ecommerce-hero/1800/1200"
+          alt="Modern gadgets on a sleek background"
+          fill
+          className="object-cover opacity-30"
+          priority
+          data-ai-hint="modern gadgets"
+        />
+        <div className="relative container mx-auto h-full flex flex-col items-center justify-center text-center text-primary-foreground p-4">
+          <h1 className="text-4xl md:text-6xl font-headline font-bold text-white drop-shadow-lg">
+            E-Commerce by Talha
           </h1>
-          <p className="mt-4 max-w-2xl text-lg md:text-xl text-foreground/80 font-body">
-            Discover your next favorite game. Unparalleled adventures await.
+          <p className="mt-4 max-w-2xl text-lg md:text-xl text-primary-foreground/80">
+            Discover the latest in tech and style. Quality products for a modern life.
           </p>
+          <Button asChild size="lg" className="mt-8 bg-white text-primary hover:bg-white/90">
+            <Link href="/products">
+              Shop Now <ArrowRight className="ml-2" />
+            </Link>
+          </Button>
         </div>
       </section>
 
-      <section id="recommendations" className="py-12 md:py-20 bg-background">
-        <div className="container max-w-screen-2xl">
-          <div className="flex flex-col items-center text-center">
-            <h2 className="text-3xl md:text-4xl font-headline font-bold">Personalized Picks</h2>
-            <p className="mt-2 max-w-2xl text-md md:text-lg text-muted-foreground">
-              Tell us what you like, and our AI will find games tailored just for you.
-            </p>
-          </div>
-          <Recommendations />
-        </div>
-      </section>
-
-      <section id="games" className="py-12 md:py-20 bg-muted/40">
-        <div className="container max-w-screen-2xl">
-          <div className="flex flex-col items-center text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-headline font-bold">Our Games</h2>
-            <p className="mt-2 max-w-2xl text-md md:text-lg text-muted-foreground">
-              A curated selection of titles for every kind of player.
-            </p>
+      <section className="py-12 md:py-20 bg-background">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-headline font-bold">Featured Categories</h2>
+            <p className="mt-2 text-muted-foreground text-lg">Explore our most popular collections</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {games.map((game) => (
-              <GameCard key={game.id} game={game} />
+            {['Electronics', 'Jewelery', 'Men\'s Clothing', 'Women\'s Clothing'].map(category => (
+                <div key={category} className="group relative overflow-hidden rounded-lg shadow-lg">
+                    <Link href={`/products?category=${encodeURIComponent(category.toLowerCase())}`}>
+                        <Image
+                        src={`https://picsum.photos/seed/${category.replace(/ /g, '-')}/600/400`}
+                        alt={category}
+                        width={600}
+                        height={400}
+                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+                        data-ai-hint={category.toLowerCase().split(' ')[0]}
+                        />
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <h3 className="text-2xl font-headline font-bold text-white">{category}</h3>
+                        </div>
+                    </Link>
+                </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="py-12 md:py-20 bg-muted/40">
+        <div className="container mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-headline font-bold">Why Choose Us?</h2>
+            <p className="mt-2 text-muted-foreground text-lg mb-8">Service and quality you can trust.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="p-6">
+                    <h3 className="text-xl font-bold font-headline">Fast Shipping</h3>
+                    <p className="mt-2 text-muted-foreground">Get your orders delivered to your doorstep in no time.</p>
+                </div>
+                <div className="p-6">
+                    <h3 className="text-xl font-bold font-headline">Quality Products</h3>
+                    <p className="mt-2 text-muted-foreground">We source the best products to ensure your satisfaction.</p>
+                </div>
+                <div className="p-6">
+                    <h3 className="text-xl font-bold font-headline">24/7 Support</h3>
+                    <p className="mt-2 text-muted-foreground">Our team is here to help you anytime, anywhere.</p>
+                </div>
+            </div>
         </div>
       </section>
     </div>
