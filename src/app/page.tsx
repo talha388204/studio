@@ -39,7 +39,7 @@ export default function HomePage() {
             <p className="mt-2 text-muted-foreground text-lg">Explore our most popular collections</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {['smartphones', 'laptops', 'fragrances', 'skincare'].map(category => (
+            {['smartphones', 'laptops', 'books', 'skincare'].map(category => (
                 <div key={category} className="group relative overflow-hidden rounded-lg shadow-lg transition-all duration-300 hover:shadow-primary/20 hover:-translate-y-2">
                     <Link href={`/products?category=${encodeURIComponent(category.toLowerCase())}`}>
                         <Image
