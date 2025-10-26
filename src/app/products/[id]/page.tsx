@@ -10,11 +10,12 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/hooks/use-cart';
 
-export default function ProductDetailPage({ params: { id } }: { params: { id: string } }) {
+export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { addToCart } = useCart();
+  const id = params.id;
 
   useEffect(() => {
     async function fetchProduct() {
