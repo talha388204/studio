@@ -36,16 +36,17 @@ export default function ProductDetailPage({ params: { id } }: { params: { id: st
 
   if (loading) {
     return (
-        <div className="container mx-auto py-8 md:py-12">
-            <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+        <div className="container mx-auto py-12 md:py-16">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
                 <div>
                     <Skeleton className="aspect-square w-full rounded-lg" />
                 </div>
-                <div className="space-y-4">
-                    <Skeleton className="h-8 w-3/4" />
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-1/3" />
-                    <Skeleton className="h-20 w-full" />
+                <div className="space-y-6">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-6 w-1/3" />
+                    <Skeleton className="h-10 w-1/4" />
+                    <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-12 w-1/2" />
                 </div>
             </div>
@@ -54,7 +55,7 @@ export default function ProductDetailPage({ params: { id } }: { params: { id: st
   }
 
   if (error) {
-    return <div className="text-center py-20 text-red-500">{error}</div>;
+    return <div className="text-center py-20 text-destructive">{error}</div>;
   }
 
   if (!product) {
@@ -62,9 +63,9 @@ export default function ProductDetailPage({ params: { id } }: { params: { id: st
   }
 
   return (
-    <div className="container mx-auto py-8 md:py-12">
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-        <div className="bg-white p-8 rounded-lg shadow-sm flex items-center justify-center">
+    <div className="container mx-auto py-12 md:py-16">
+      <div className="grid md:grid-cols-2 gap-8 lg:gap-16 items-start">
+        <div className="bg-card/50 backdrop-blur-sm border border-border/50 p-8 rounded-lg shadow-lg flex items-center justify-center">
             <div className="relative aspect-square w-full max-w-md">
                 <Image
                     src={product.image}
@@ -75,22 +76,22 @@ export default function ProductDetailPage({ params: { id } }: { params: { id: st
             </div>
         </div>
         <div className="flex flex-col justify-center">
-            <Badge variant="outline" className="w-fit">{product.category}</Badge>
-            <h1 className="text-3xl md:text-4xl font-headline font-bold mt-2">{product.title}</h1>
-            <div className="flex items-center gap-2 mt-2">
-                <div className="flex items-center">
+            <Badge variant="secondary" className="w-fit mb-3">{product.category}</Badge>
+            <h1 className="text-3xl md:text-4xl font-headline font-bold">{product.title}</h1>
+            <div className="flex items-center gap-4 mt-4">
+                <div className="flex items-center gap-1">
                     <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    <span className="ml-1 font-bold">{product.rating.rate}</span>
+                    <span className="ml-1 font-bold text-lg">{product.rating.rate}</span>
                 </div>
                 <span className="text-muted-foreground">({product.rating.count} reviews)</span>
             </div>
-            <Separator className="my-4" />
-            <p className="text-3xl font-bold text-primary mb-4">${product.price.toFixed(2)}</p>
-            <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+            <Separator className="my-6" />
+            <p className="text-4xl font-bold text-primary mb-6">${product.price.toFixed(2)}</p>
+            <p className="text-muted-foreground leading-relaxed text-base">{product.description}</p>
             
-            <div className="mt-6">
-                 <Button size="lg" className="w-full md:w-auto">
-                    <ShoppingCart className="mr-2" /> Add to Cart
+            <div className="mt-8">
+                 <Button size="lg" className="w-full md:w-auto group bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 transform hover:scale-105">
+                    <ShoppingCart className="mr-2 group-hover:rotate-12 transition-transform" /> Add to Cart
                 </Button>
             </div>
         </div>
