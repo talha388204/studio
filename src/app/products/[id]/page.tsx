@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { getProduct, type Product } from '@/lib/products';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -10,12 +11,13 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/hooks/use-cart';
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { addToCart } = useCart();
-  const id = params.id;
+  const params = useParams();
+  const id = params.id as string;
 
   useEffect(() => {
     async function fetchProduct() {
