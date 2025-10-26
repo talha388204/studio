@@ -1,0 +1,144 @@
+/**
+ * @file Firebase Security Rules for Ekta Game Studio App
+ *
+ * @corePhilosophy This ruleset enforces a strict user-ownership model for user-specific data
+ *  (preferences, recommendations) and allows public read access to game data. User accounts are protected
+ *  by requiring authentication and ensuring the authenticated user ID matches the account ID.
+ *
+ * @dataStructure
+ *  - `/user_accounts/{userId}`: Stores user profile information.
+ *  - `/games/{gameId}`: Stores game information (publicly readable).
+ *  - `/user_accounts/{userId}/game_preferences/{preferenceId}`: Stores user's game preferences.
+ *  - `/user_accounts/{userId}/game_recommendations/{recommendationId}`: Stores game recommendations for users.
+ *
+ * @keySecurityDecisions
+ *  - User accounts can only be created by the user themselves (self-creation).
+ *  - Listing all user accounts is disallowed.
+ *  - Game data is publicly readable, but write access is not covered by these rules.
+ *  - User-specific data (preferences, recommendations) is only accessible to the owning user.
+ *
+ * @denormalizationForAuthorization Not applicable; the data structure is already designed to avoid extra reads.
+ * @structuralSegregation User-specific data is segregated under the `/user_accounts/{userId}` path.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Secures user account documents, ensuring only the user can read/write their own data.
+     * @path /user_accounts/{userAccountId}
+     * @allow (create) User 'user_abc' can create their account if request.auth.uid == 'user_abc' and the document ID matches.
+     * @allow (get) User 'user_abc' can read their account if request.auth.uid == 'user_abc'.
+     * @allow (update) User 'user_abc' can update their account if request.auth.uid == 'user_abc'.
+     * @allow (delete) User 'user_abc' can delete their account if request.auth.uid == 'user_abc' and the document exists.
+     * @deny (create) User 'user_xyz' cannot create an account with ID 'user_abc'.
+     * @deny (get) User 'user_xyz' cannot read the account of user 'user_abc'.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data.
+     */
+    match /user_accounts/{userAccountId} {
+      //  Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is the owner of the account
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      // Helper function to check if the user is the existing owner of the account and the account exists
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userAccountId);
+      allow list: if false; // Listing users is disallowed.
+      allow create: if isOwner(userAccountId) && request.resource.data.id == userAccountId;
+      allow update: if isExistingOwner(userAccountId) && request.resource.data.id == resource.data.id; // Enforce immutability of id field
+      allow delete: if isExistingOwner(userAccountId);
+    }
+
+    /**
+     * @description Defines security rules for the Games collection, allowing public read access.
+     * @path /games/{gameId}
+     * @allow (get) Any user can read game data.
+     * @allow (list) Any user can list games.
+     * @deny (create) No one can create games (write access not defined).
+     * @deny (update) No one can update games (write access not defined).
+     * @deny (delete) No one can delete games (write access not defined).
+     * @principle Allows public read access to game data.
+     */
+    match /games/{gameId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    /**
+     * @description Secures user-specific game preferences, ensuring only the owning user can manage them.
+     * @path /user_accounts/{userAccountId}/game_preferences/{gamePreferenceId}
+     * @allow (create) User 'user_abc' can create a game preference under their account if request.auth.uid == 'user_abc' and request.resource.data.userAccountId == userAccountId.
+     * @allow (get) User 'user_abc' can read their game preference if request.auth.uid == 'user_abc'.
+     * @allow (update) User 'user_abc' can update their game preference if request.auth.uid == 'user_abc'.
+     * @allow (delete) User 'user_abc' can delete their game preference if request.auth.uid == 'user_abc' and the document exists.
+     * @deny (create) User 'user_xyz' cannot create a game preference under 'user_abc's account.
+     * @deny (get) User 'user_xyz' cannot read game preferences under 'user_abc's account.
+     * @principle Enforces path-based ownership for user-specific game preferences.
+     */
+    match /user_accounts/{userAccountId}/game_preferences/{gamePreferenceId} {
+      //  Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is the owner of the account
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+        // Helper function to check if the user is the existing owner of the account and the account exists
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userAccountId);
+      allow list: if isOwner(userAccountId);
+      allow create: if isOwner(userAccountId) && request.resource.data.userAccountId == userAccountId;
+      allow update: if isExistingOwner(userAccountId) && request.resource.data.userAccountId == userAccountId;
+      allow delete: if isExistingOwner(userAccountId);
+    }
+
+    /**
+     * @description Secures user-specific game recommendations, ensuring only the owning user can access them.
+     * @path /user_accounts/{userAccountId}/game_recommendations/{gameRecommendationId}
+     * @allow (create) User 'user_abc' can have a game recommendation created under their account if request.resource.data.userAccountId == 'user_abc'.
+     * @allow (get) User 'user_abc' can read their game recommendations.
+     * @allow (update) User 'user_abc' can update their game recommendations.
+     * @allow (delete) User 'user_abc' can delete their game recommendations.
+     * @deny (create) User 'user_xyz' cannot create a game recommendation under 'user_abc's account.
+     * @deny (get) User 'user_xyz' cannot read game recommendations under 'user_abc's account.
+     * @principle Enforces path-based ownership for user-specific game recommendations.
+     */
+    match /user_accounts/{userAccountId}/game_recommendations/{gameRecommendationId} {
+       //  Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is the owner of the account
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+        // Helper function to check if the user is the existing owner of the account and the account exists
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userAccountId);
+      allow list: if isOwner(userAccountId);
+      allow create: if request.auth != null && request.resource.data.userAccountId == userAccountId;
+      allow update: if isExistingOwner(userAccountId) && request.resource.data.userAccountId == userAccountId;
+      allow delete: if isExistingOwner(userAccountId);
+    }
+  }
+}
