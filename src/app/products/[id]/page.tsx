@@ -17,10 +17,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const { addToCart } = useCart();
 
   useEffect(() => {
-    async function fetchProduct() {
+    async function fetchProduct(id: string) {
       try {
         setLoading(true);
-        const fetchedProduct = await getProduct(params.id);
+        const fetchedProduct = await getProduct(id);
         if (fetchedProduct) {
           setProduct(fetchedProduct);
         } else {
@@ -33,10 +33,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         setLoading(false);
       }
     }
-    if (params.id) {
-        fetchProduct();
+    
+    if (params && params.id) {
+        fetchProduct(params.id);
     }
-  }, [params.id]);
+  }, [params]);
 
   const handleAddToCart = () => {
     if (product) {
