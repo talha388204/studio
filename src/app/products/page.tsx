@@ -1,31 +1,52 @@
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProducts, type Product } from '@/lib/products';
 import ProductCard from '@/components/product-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
+const INITIAL_LOAD = 20;
+const LOAD_MORE_COUNT = 20;
+
 function ProductsPageContent() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
+  
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  
   const [error, setError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState('default');
   const [searchTerm, setSearchTerm] = useState('');
 
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
+  
+  const observer = useRef<IntersectionObserver>();
+  const lastProductElementRef = useCallback((node: HTMLDivElement) => {
+    if (loading || loadingMore) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+            loadMoreProducts();
+        }
+    });
+    if (node) observer.current.observe(node);
+  }, [loading, loadingMore, hasMore]);
+
 
   useEffect(() => {
     async function fetchProducts() {
       try {
         setLoading(true);
         const fetchedProducts = await getProducts();
-        setProducts(fetchedProducts);
+        setAllProducts(fetchedProducts);
       } catch (err) {
         setError('Failed to fetch products. Please try again later.');
         console.error(err);
@@ -37,7 +58,7 @@ function ProductsPageContent() {
   }, []);
 
   useEffect(() => {
-    let tempProducts = products;
+    let tempProducts = allProducts;
 
     if (category) {
         tempProducts = tempProducts.filter(p => p.category.toLowerCase() === category.toLowerCase());
@@ -61,8 +82,24 @@ function ProductsPageContent() {
     });
 
     setFilteredProducts(sorted);
+    setDisplayedProducts(sorted.slice(0, INITIAL_LOAD));
+    setHasMore(sorted.length > INITIAL_LOAD);
 
-  }, [products, category, searchTerm, sortOrder]);
+  }, [allProducts, category, searchTerm, sortOrder]);
+
+  const loadMoreProducts = () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setTimeout(() => {
+        const currentLength = displayedProducts.length;
+        const newProducts = filteredProducts.slice(currentLength, currentLength + LOAD_MORE_COUNT);
+        setDisplayedProducts(prev => [...prev, ...newProducts]);
+        if (currentLength + LOAD_MORE_COUNT >= filteredProducts.length) {
+            setHasMore(false);
+        }
+        setLoadingMore(false);
+    }, 500); // Simulate network delay
+  };
 
 
   if (error) {
@@ -111,11 +148,32 @@ function ProductsPageContent() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            {displayedProducts.map((product, index) => {
+                if (displayedProducts.length === index + 1) {
+                    return <div ref={lastProductElementRef} key={product.id}><ProductCard product={product} /></div>
+                } else {
+                    return <ProductCard key={product.id} product={product} />
+                }
+            })}
+            </div>
+            {loadingMore && (
+                <div className="flex justify-center items-center py-10">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            )}
+            {!hasMore && displayedProducts.length > 0 && (
+                <div className="text-center py-10 text-muted-foreground">
+                    <p>You've reached the end of the list.</p>
+                </div>
+            )}
+            {displayedProducts.length === 0 && !loading && (
+                 <div className="text-center py-20 col-span-full">
+                    <p className="text-muted-foreground text-lg">No products found.</p>
+                </div>
+            )}
+        </>
       )}
     </div>
   );
